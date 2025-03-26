@@ -3,13 +3,13 @@ import { greedy_snake_step as snake1 } from './build/debug.js';
 import { greedy_snake_step as snake2 } from './build/debug.js';
 import { greedy_snake_step as snake3 } from './build/debug.js';
 import { greedy_snake_step as snake4 } from './build/debug.js';
-// import { greedy_snake_step as snake5 } from './t3-snake-{num}-{PL}/pkg/snake.js';
-// import { greedy_snake_step as snake6 } from './t3-snake-{num}-{PL}/pkg/snake.js';
-// import { greedy_snake_step as snake7 } from './t3-snake-{num}-{PL}/pkg/snake.js';
-// import { greedy_snake_step as snake8 } from './t3-snake-{num}-{PL}/pkg/snake.js';
+import { greedy_snake_step as snake5 } from './build/debug.js';
+import { greedy_snake_step as snake6 } from './build/debug.js';
+import { greedy_snake_step as snake7 } from './build/debug.js';
+import { greedy_snake_step as snake8 } from './build/debug.js';
 
 // Game mode
-export const GAME_MODE = "4snakes"; // "1v1" or "4snakes" or "custom"
+export const GAME_MODE = "4snakes"; // "1v1" or "4snakes" or "custom" or "bigbattle" or "epicbattle"
 
 // Snake decision functions mapping
 export const snakeModules = [
@@ -17,10 +17,10 @@ export const snakeModules = [
   snake2,
   snake3,
   snake4,
-  // snake5,
-  // snake6,
-  // snake7,
-  // snake8,
+  snake5,
+  snake6,
+  snake7,
+  snake8,
   // You can add more snake decision functions
 ];
 
@@ -66,6 +66,39 @@ export const gameParameters = {
         [11, 6, 10, 6, 9, 6, 8, 6],  // Middle right
         [6, 2, 6, 3, 6, 4, 6, 5],    // Middle top
         [6, 11, 6, 10, 6, 9, 6, 8]   // Middle bottom
+    ]
+  },
+  "bigbattle": {
+    boardSize: 20,
+    snakeCount: 4,  
+    foodCount: 40,
+    maxRounds: 300,
+    // Four snakes positioned strategically on the larger board
+    initialSnakePositions: [
+        // Four snakes positioned at different corners
+        [3, 3, 3, 4, 3, 5, 3, 6],   // Top left area
+        [17, 3, 17, 4, 17, 5, 17, 6], // Top right area
+        [3, 17, 3, 16, 3, 15, 3, 14], // Bottom left area
+        [17, 17, 17, 16, 17, 15, 17, 14], // Bottom right area
+    ]
+  },
+  "epicbattle": {
+    boardSize: 30,
+    snakeCount: 8,  
+    foodCount: 60,
+    maxRounds: 500,
+    // Eight snakes positioned across the giant board
+    initialSnakePositions: [
+        // Four corner snakes
+        [3, 3, 3, 4, 3, 5, 3, 6],       // Top left corner
+        [27, 3, 27, 4, 27, 5, 27, 6],   // Top right corner
+        [3, 27, 3, 26, 3, 25, 3, 24],   // Bottom left corner
+        [27, 27, 27, 26, 27, 25, 27, 24], // Bottom right corner
+        // Four middle area snakes
+        [15, 8, 15, 9, 15, 10, 15, 11],  // Upper middle
+        [15, 22, 15, 21, 15, 20, 15, 19], // Lower middle
+        [8, 15, 9, 15, 10, 15, 11, 15],  // Left middle
+        [22, 15, 21, 15, 20, 15, 19, 15]  // Right middle
     ]
   }
 };

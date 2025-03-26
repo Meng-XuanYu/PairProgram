@@ -39,8 +39,30 @@ export function greedy_snake_step(
   }
   
   // 创建棋盘状态
-  // 0=空格, 1=蛇身, 2=食物, 3=其他蛇头
+  // 0=空格, 1=蛇身, 2=食物, 3=其他蛇头, 4=危险区域(其他蛇头可能移动的位置), 5=蛇尾
   const board = new Int32Array(n * n);
+  // 创建用于标记蛇尾的数组
+  const snakeTails = new Int32Array(n * n);
+  
+  // 找到自己的蛇尾
+  let myLastValidX: i32 = -1;
+  let myLastValidY: i32 = -1;
+  
+  for (let i = 6; i >= 2; i -= 2) {
+    const x = snake[i];
+    const y = snake[i + 1];
+    
+    if (x >= 1 && y >= 1 && x <= n && y <= n) {
+      myLastValidX = x;
+      myLastValidY = y;
+      break;
+    }
+  }
+  
+  // 标记自己的蛇尾
+  if (myLastValidX != -1 && myLastValidY != -1) {
+    snakeTails[(myLastValidY - 1) * n + (myLastValidX - 1)] = 1;
+  }
   
   // 标记自己的蛇身（除了蛇头）
   for (let i = 2; i < 8; i += 2) {
@@ -51,6 +73,9 @@ export function greedy_snake_step(
     
     board[(y - 1) * n + (x - 1)] = 1; // 1表示蛇身
   }
+  
+  // 其他蛇头可能的下一步位置数组
+  const dangerZones = new Int32Array(n * n);
   
   // 标记其他蛇的身体和头部
   for (let s = 0; s < snake_num; s++) {
@@ -63,9 +88,67 @@ export function greedy_snake_step(
       continue; // 跳过已死亡的蛇
     }
     
+    // 找到这条蛇的尾部
+    let otherLastValidX: i32 = -1;
+    let otherLastValidY: i32 = -1;
+    
+    for (let i = 6; i >= 2; i -= 2) {
+      const x = other_snakes[s * 8 + i];
+      const y = other_snakes[s * 8 + i + 1];
+      
+      if (x >= 1 && y >= 1 && x <= n && y <= n) {
+        otherLastValidX = x;
+        otherLastValidY = y;
+        break;
+      }
+    }
+    
+    // 标记其他蛇的尾部
+    if (otherLastValidX != -1 && otherLastValidY != -1) {
+      snakeTails[(otherLastValidY - 1) * n + (otherLastValidX - 1)] = 1;
+    }
+    
     // 标记其他蛇的头部为3（特殊处理）
     if (otherHeadX >= 1 && otherHeadY >= 1 && otherHeadX <= n && otherHeadY <= n) {
       board[(otherHeadY - 1) * n + (otherHeadX - 1)] = 3; // 3表示其他蛇头
+      
+      // 获取其他蛇的第二节身体坐标，用于判断当前方向
+      const otherNeckX = other_snakes[s * 8 + 2];
+      const otherNeckY = other_snakes[s * 8 + 3];
+      
+      // 标记该蛇头可能移动的方向为危险区域
+      // 上方向 (+y)
+      if (otherHeadY < n && !(otherHeadX == otherNeckX && otherHeadY + 1 == otherNeckY)) {
+        const idx = otherHeadY * n + (otherHeadX - 1);
+        // 只在不是蛇身的地方标记危险区域
+        if (board[idx] == 0) {
+          dangerZones[idx] = 1;
+        }
+      }
+      
+      // 左方向 (-x)
+      if (otherHeadX > 1 && !(otherHeadX - 1 == otherNeckX && otherHeadY == otherNeckY)) {
+        const idx = (otherHeadY - 1) * n + (otherHeadX - 2);
+        if (board[idx] == 0) {
+          dangerZones[idx] = 1;
+        }
+      }
+      
+      // 下方向 (-y)
+      if (otherHeadY > 1 && !(otherHeadX == otherNeckX && otherHeadY - 1 == otherNeckY)) {
+        const idx = (otherHeadY - 2) * n + (otherHeadX - 1);
+        if (board[idx] == 0) {
+          dangerZones[idx] = 1;
+        }
+      }
+      
+      // 右方向 (+x)
+      if (otherHeadX < n && !(otherHeadX + 1 == otherNeckX && otherHeadY == otherNeckY)) {
+        const idx = (otherHeadY - 1) * n + otherHeadX;
+        if (board[idx] == 0) {
+          dangerZones[idx] = 1;
+        }
+      }
     }
     
     // 标记其他蛇的身体（除了头部）
@@ -79,6 +162,13 @@ export function greedy_snake_step(
     }
   }
   
+  // 将危险区域标记到棋盘上
+  for (let i = 0; i < n * n; i++) {
+    if (dangerZones[i] == 1 && board[i] == 0) {
+      board[i] = 4; // 4表示危险区域
+    }
+  }
+  
   // 标记果子位置
   for (let i = 0; i < food_num * 2; i += 2) {
     const x = foods[i];
@@ -87,9 +177,16 @@ export function greedy_snake_step(
     if (x < 1 || y < 1 || x > n || y > n) continue;
     
     const idx = (y - 1) * n + (x - 1);
-    // 果子优先级低于蛇身，高于蛇头（同位置碰撞规则）
+    // 果子优先级低于蛇身，高于蛇头和危险区域（同位置碰撞规则）
     if (board[idx] != 1) {
       board[idx] = 2; // 2表示食物
+    }
+  }
+  
+  // 标记蛇尾位置为5（在这里，蛇尾的标记会覆盖蛇身的标记，使其成为可以移动的位置）
+  for (let i = 0; i < n * n; i++) {
+    if (snakeTails[i] == 1) {
+      board[i] = 5; // 5表示蛇尾
     }
   }
   
@@ -97,56 +194,65 @@ export function greedy_snake_step(
   const canMove = new Int32Array(4);
   const canEat = new Int32Array(4);
   const willDie = new Int32Array(4); // 标记移动后是否会死亡
+  const isDanger = new Int32Array(4); // 标记移动位置是否在危险区域
   
   // 上方向 (+y)
   if (headY < n) { // 检查不会超出上边界
     const idx = headY * n + (headX - 1); // 上方向坐标：(headX, headY+1)
     const cellValue = board[idx];
-    // 可以移动到空格或食物位置
-    canMove[UP] = (cellValue == 0 || cellValue == 2 || cellValue == 3) ? 1 : 0;
-    // 如果目标位置是其他蛇头或蛇身，标记为危险位置
+    // 可以移动到空格、食物位置、蛇尾或危险区域
+    canMove[UP] = (cellValue == 0 || cellValue == 2 || cellValue == 3 || cellValue == 4 || cellValue == 5) ? 1 : 0;
+    // 如果目标位置是其他蛇头，标记为危险位置，但蛇尾是安全的
     willDie[UP] = (cellValue == 1 || cellValue == 3) ? 1 : 0;
     canEat[UP] = cellValue == 2 ? 1 : 0;
+    isDanger[UP] = cellValue == 4 ? 1 : 0;
   } else {
     // 超出边界，不能移动
     canMove[UP] = 0;
     willDie[UP] = 1; // 会死亡
+    isDanger[UP] = 0;
   }
   
   // 左方向 (-x)
   if (headX > 1) { // 检查不会超出左边界
     const idx = (headY - 1) * n + (headX - 2); // 左方向坐标：(headX-1, headY)
     const cellValue = board[idx];
-    canMove[LEFT] = (cellValue == 0 || cellValue == 2 || cellValue == 3) ? 1 : 0;
+    canMove[LEFT] = (cellValue == 0 || cellValue == 2 || cellValue == 3 || cellValue == 4 || cellValue == 5) ? 1 : 0;
     willDie[LEFT] = (cellValue == 1 || cellValue == 3) ? 1 : 0;
     canEat[LEFT] = cellValue == 2 ? 1 : 0;
+    isDanger[LEFT] = cellValue == 4 ? 1 : 0;
   } else {
     canMove[LEFT] = 0;
     willDie[LEFT] = 1;
+    isDanger[LEFT] = 0;
   }
   
   // 下方向 (-y)
   if (headY > 1) { // 检查不会超出下边界
     const idx = (headY - 2) * n + (headX - 1); // 下方向坐标：(headX, headY-1)
     const cellValue = board[idx];
-    canMove[DOWN] = (cellValue == 0 || cellValue == 2 || cellValue == 3) ? 1 : 0;
+    canMove[DOWN] = (cellValue == 0 || cellValue == 2 || cellValue == 3 || cellValue == 4 || cellValue == 5) ? 1 : 0;
     willDie[DOWN] = (cellValue == 1 || cellValue == 3) ? 1 : 0;
     canEat[DOWN] = cellValue == 2 ? 1 : 0;
+    isDanger[DOWN] = cellValue == 4 ? 1 : 0;
   } else {
     canMove[DOWN] = 0;
     willDie[DOWN] = 1;
+    isDanger[DOWN] = 0;
   }
   
   // 右方向 (+x)
   if (headX < n) { // 检查不会超出右边界
     const idx = (headY - 1) * n + headX; // 右方向坐标：(headX+1, headY)
     const cellValue = board[idx];
-    canMove[RIGHT] = (cellValue == 0 || cellValue == 2 || cellValue == 3) ? 1 : 0;
+    canMove[RIGHT] = (cellValue == 0 || cellValue == 2 || cellValue == 3 || cellValue == 4 || cellValue == 5) ? 1 : 0;
     willDie[RIGHT] = (cellValue == 1 || cellValue == 3) ? 1 : 0;
     canEat[RIGHT] = cellValue == 2 ? 1 : 0;
+    isDanger[RIGHT] = cellValue == 4 ? 1 : 0;
   } else {
     canMove[RIGHT] = 0;
     willDie[RIGHT] = 1;
+    isDanger[RIGHT] = 0;
   }
   
   // 不允许向与当前移动方向相反的方向移动（防止直接撞上自己的第二节身体）
@@ -163,8 +269,8 @@ export function greedy_snake_step(
   }
   
   // 优先级2：如果能吃到食物（即使可能死亡），也尝试移动
-  // 这是一个冒险策略，在某些情况下可能值得
-  if (round < 10) { // 只在剩余回合较少时采取冒险策略
+  // 这是一个冒险策略，仅在snake_num为1且回合数较少时采取
+  if (snake_num == 1) { // 只有一条敌方蛇且剩余回合较少时采取冒险策略
     for (let dir = 0; dir < 4; dir++) {
       if (canEat[dir] == 1 && canMove[dir] == 1) {
         return dir;
@@ -173,7 +279,12 @@ export function greedy_snake_step(
   }
   
   // 计算每个安全方向到最近食物的距离
-  const distances = new Int32Array(4).fill(n * n);
+  // 使用具体的大数填充初始值，而不是n*n
+  const MAX_DISTANCE: i32 = 1000;
+  const distances = new Int32Array(4);
+  for (let i = 0; i < 4; i++) {
+    distances[i] = MAX_DISTANCE;
+  }
   
   for (let i = 0; i < food_num * 2; i += 2) {
     const foodX = foods[i];
@@ -203,10 +314,25 @@ export function greedy_snake_step(
     }
   }
   
-  // 优先级3：选择距离食物最近的安全方向（不会死亡）
-  let minDist = n * n;
+  // 优先级3：选择距离食物最近的安全方向（不会死亡且不在危险区域）
+  let minDist = MAX_DISTANCE;
   let bestDir = -1;
   
+  // 首先尝试找到既安全又不在危险区域的最佳方向
+  for (let dir = 0; dir < 4; dir++) {
+    if (canMove[dir] && willDie[dir] == 0 && isDanger[dir] == 0 && distances[dir] < minDist) {
+      minDist = distances[dir];
+      bestDir = dir;
+    }
+  }
+  
+  // 如果找到了最佳方向，立即返回
+  if (bestDir != -1) {
+    return bestDir;
+  }
+  
+  // 优先级4：如果没有既安全又不在危险区域的方向，允许进入危险区域但仍追求最短距离
+  minDist = MAX_DISTANCE;
   for (let dir = 0; dir < 4; dir++) {
     if (canMove[dir] && willDie[dir] == 0 && distances[dir] < minDist) {
       minDist = distances[dir];
@@ -218,14 +344,21 @@ export function greedy_snake_step(
     return bestDir;
   }
   
-  // 优先级4：选择任何安全方向（不会死亡）
+  // 优先级5：选择任何安全且不在危险区域的方向
+  for (let dir = 0; dir < 4; dir++) {
+    if (canMove[dir] && willDie[dir] == 0 && isDanger[dir] == 0) {
+      return dir;
+    }
+  }
+  
+  // 优先级6：选择任何安全方向（不会死亡，即使在危险区域）
   for (let dir = 0; dir < 4; dir++) {
     if (canMove[dir] && willDie[dir] == 0) {
       return dir;
     }
   }
   
-  // 优先级5：没有安全的方向，选择任何可以移动的方向（即使可能死亡）
+  // 优先级7：没有安全的方向，选择任何可以移动的方向（即使可能死亡）
   for (let dir = 0; dir < 4; dir++) {
     if (canMove[dir]) {
       return dir;
