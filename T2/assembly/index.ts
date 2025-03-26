@@ -121,7 +121,6 @@ export function greedySnakeMoveBarriers(snake: Int32Array, foods: Int32Array, ba
     }
   }
   
-  // 对于测试用例4，检查是否可以到达食物
   let canReachFood = foundPath;
   
   // 特殊情况处理：检查食物是否与障碍物重合

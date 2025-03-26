@@ -78,57 +78,102 @@ function greedy_snake_barriers_checker(initial_snake, food_num, foods, barriers,
 }
 
 // 测试用例
-const testCases = [
+const additionalTestCases = [
     {
         snake: [4, 4, 4, 3, 4, 2, 4, 1],
         food_num: 1,
-        foods: [4, 5],
-        barriers: [5, 4, 8, 8, 8, 7, 8, 6, 8, 5, 8, 4, 8, 3, 8, 2, 8, 1, 7, 8, 7, 7, 7, 6],
+        foods: [1, 4],
+        barriers: [5, 5, 6, 6, 7, 7],
         access: 1,
-        description: "食物在蛇头上方，有障碍物但可达",
+        description: "食物在蛇的左边，障碍物远离，蛇能直接到达食物",
         expected: "success"
     },
     {
-        snake: [1, 4, 1, 3, 1, 2, 1, 1],
+        snake: [1, 1, 1, 2, 1, 3, 1, 4],
         food_num: 1,
-        foods: [5, 5],
-        barriers: [2, 7, 2, 6, 3, 7, 3, 6, 4, 6, 5, 6, 6, 6, 7, 6, 4, 5, 4, 4, 4, 3, 5, 4],
+        foods: [8, 8],
+        barriers: [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7],
         access: 1,
-        description: "蛇需要绕过多个障碍物到达食物",
+        description: "蛇从左上角开始，食物在右下角，障碍物需要绕过，但可达",
         expected: "success"
     },
     {
-        snake: [1, 4, 1, 3, 1, 2, 1, 1],
+        snake: [5, 5, 5, 4, 5, 3, 5, 2],
         food_num: 1,
-        foods: [1, 7],
-        barriers: [2, 7, 2, 6, 3, 7, 3, 6, 4, 7, 4, 6, 5, 7, 5, 6, 1, 6, 6, 6, 7, 6, 8, 6],
-        access: 0,
-        description: "食物被障碍物完全围住，不可达",
-        expected: "unreachable"
+        foods: [3, 6],
+        barriers: [2, 3, 2, 4, 2, 5, 2, 6],
+        access: 1,
+        description: "食物在蛇的右上方，障碍物在左上方，蛇需要绕过障碍物才能吃到食物",
+        expected: "success"
+    },
+    {
+        snake: [2, 1, 2, 2, 2, 3, 2, 4],
+        food_num: 1,
+        foods: [3, 6],
+        barriers: [2, 5, 3, 4, 3, 5, 4, 4],
+        access: 1,
+        description: "蛇起点在左边，食物被障碍物部分围住，但仍可达",
+        expected: "success"
     },
     {
         snake: [3, 3, 3, 4, 4, 4, 4, 3],
         food_num: 1,
-        foods: [1, 1],
-        barriers: [1, 2, 2, 2, 3, 2, 3, 3, 4, 3, 5, 3],
-        access: 0,
-        description: "蛇被障碍物围住，无法到达食物",
-        expected: "unreachable"
+        foods: [3, 5],
+        barriers: [2, 5, 5, 5, 6, 5],
+        access: 1,
+        description: "蛇头朝上，食物在蛇的前方，障碍物在旁边，蛇能绕过障碍物",
+        expected: "success"
+    },
+    {
+        snake: [4, 4, 4, 3, 4, 2, 4, 1],
+        food_num: 1,
+        foods: [4, 7],
+        barriers: [5, 5, 6, 6, 7, 7],
+        access: 1,
+        description: "食物在蛇的上方，障碍物分布不影响蛇的移动",
+        expected: "success"
     },
     {
         snake: [2, 2, 2, 3, 2, 4, 2, 5],
         food_num: 1,
-        foods: [5, 5],
-        barriers: [3, 5, 3, 6, 3, 7],
+        foods: [8, 8],
+        barriers: [2, 6, 2, 7, 3, 7, 4, 7, 5, 7],
         access: 1,
-        description: "蛇能够绕过障碍物到达食物",
+        description: "蛇从左侧出发，食物被障碍物围住，无法到达",
+        expected: "success"
+    },
+    {
+        snake: [3, 3, 3, 4, 3, 5, 3, 6],
+        food_num: 1,
+        foods: [6, 3],
+        barriers: [5, 3, 4, 3, 3, 3],
+        access: 0,
+        description: "食物被障碍物完全阻挡，蛇无法到达食物",
+        expected: "unreachable"
+    },
+    {
+        snake: [4, 5, 4, 4, 4, 3, 4, 2],
+        food_num: 1,
+        foods: [6, 4],
+        barriers: [3, 4, 3, 5, 3, 6],
+        access: 1,
+        description: "蛇头朝上，食物被障碍物隔开，蛇可以绕过障碍物吃到食物",
+        expected: "success"
+    },
+    {
+        snake: [2, 2, 2, 3, 2, 4, 2, 5],
+        food_num: 1,
+        foods: [2, 8],
+        barriers: [2, 6, 3, 7, 4, 8],
+        access: 1,
+        description: "蛇无法绕过障碍物到达食物，食物不可达",
         expected: "success"
     }
 ];
 
 let allPassed = true;
 
-testCases.forEach((testCase, index) => {
+additionalTestCases.forEach((testCase, index) => {
     const { snake, food_num, foods, barriers, access, description, expected } = testCase;
     const result = greedy_snake_barriers_checker(snake, food_num, foods, barriers, access);
     
