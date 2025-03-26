@@ -4,9 +4,23 @@
   "description": "",
   "main": "test.js",
   "scripts": {
-    "submit-test": "node test.js"
+    "submit-test": "node test.js",
+    "asbuild:debug": "asc assembly/index.ts --target debug",
+    "asbuild:release": "asc assembly/index.ts --target release",
+    "asbuild": "npm run asbuild:debug && npm run asbuild:release",
+    "test": "node tests",
+    "start": "npx serve ."
   },
   "type": "module",
   "author": "BUAAASE-2025",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "assemblyscript": "^0.27.35"
+  },
+  "exports": {
+    ".": {
+      "import": "./build/release.js",
+      "types": "./build/release.d.ts"
+    }
+  }
 }
